@@ -11,14 +11,19 @@ namespace CS422
     {
         private int currentLineNumber;
         private TextWriter _wrapThis;
-        private string someString;
-        NumberedTextWriter(TextWriter wrapThis)
+
+        public NumberedTextWriter(TextWriter wrapThis)
         {
             currentLineNumber = 1;
+            _wrapThis = wrapThis;
         }
-        NumberedTextWriter(TextWriter wrapThis, int startingLineNumber)
+        public NumberedTextWriter(TextWriter wrapThis, int startingLineNumber)
         {
-            currentLineNumber = startingLineNumber;
+            if (startingLineNumber < 0)
+                currentLineNumber = 1;
+            else
+                currentLineNumber = startingLineNumber;
+            _wrapThis = wrapThis;
         }
         public override Encoding Encoding
         {
@@ -26,7 +31,10 @@ namespace CS422
         }
         public override void WriteLine(string value)
         {
-            _wrapThis.Write(currentLineNumber.ToString() + ": " + value);
+            if (!value.GetType().Equals(typeof(string)))
+                _wrapThis.WriteLine(currentLineNumber.ToString() + ": ");
+            else
+                _wrapThis.WriteLine(currentLineNumber.ToString() + ": " + value);
             currentLineNumber++;
         }
     }

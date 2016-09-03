@@ -8,89 +8,149 @@ namespace CS422
 {
     public class IndexedNumsStream : Stream
     {
-        private int currentPosition;
+        private long currentPosition;
         private long streamLength;
-        IndexedNumsStream(long length)
+
+        public IndexedNumsStream(long length)
         {
-            streamLength = length;
+            try
+            {
+                if (length < 0)
+                    streamLength = 0;
+                //else if(length > Int32.MaxValue)
+                //{
+                //    throw new ArgumentOutOfRangeException("stream length is too long");
+                //}
+                else
+                    streamLength = length;
+                currentPosition = 0;
+            }
+            catch(ArgumentException ex)
+            {
+                
+            }
         }
 
         public override bool CanRead
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            get { return true; }
         }
 
         public override bool CanSeek
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            get { return true; }
         }
 
         public override bool CanWrite
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            get { return false; }
         }
 
         public override long Length
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            get { return streamLength; }
         }
 
         public override long Position
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            get { return currentPosition; }
 
             set
             {
                 if (value >= 0)
                 {
-                    if(value > streamLength)
+                    if (value > streamLength)
                     {
-                        Position = streamLength;
+                        currentPosition = streamLength;
                     }
                     else
                     {
-                        Position = value;
+                        currentPosition = value;
                     }
                 }
                 else
-                    Position = 0;
+                    currentPosition = 0;
             }
         }
 
         public override void Flush()
         {
-            throw new NotImplementedException();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (count < 0)
                 count = 0;
-            for(int i = offset; i < count; i++)
+            if (offset < 0)
+                offset = 0;
+            if ((count + offset) > streamLength)
+                throw new ArgumentException("Exceeded streamLength");
+            if(count > buffer.Length)
             {
-                buffer[i] =(byte)(i % 256);
+                throw new ArgumentOutOfRangeException("count is bigger than buffer");
             }
-            return count;
+            int i = 0;
+            for (i = 0; i < count && (i + offset < buffer.Length); i++)
+            {
+                buffer[i + offset] = (byte)(i % 256);
+                currentPosition++;
+            }
+            return i;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            throw new NotImplementedException();
+            if (SeekOrigin.Begin == origin) // Seek origin passed is the begining of the stream
+            {
+                if (offset > streamLength)
+                {
+                    throw new ArgumentException("offset moves beyond streamLength");
+                }
+                else
+                {
+                    if (offset < 0)
+                    {
+                        throw new ArgumentException("offset is below zero");
+                    }
+                    else
+                    {
+                        currentPosition = offset;
+                    }
+                }
+            }
+            else if (SeekOrigin.End == origin) // seek origin passed is the end of the stream
+            {
+                if (offset > 0)
+                {
+                    throw new ArgumentException("offset is beyond streamLength");
+                }
+                else if ((offset + streamLength) < 0)
+                {
+                    throw new ArgumentException("offset is targeting before begining of stream");
+                }
+                else
+                {
+                    currentPosition = streamLength + offset;
+                    return currentPosition;
+                }
+            }
+            else // seek origin passed is current posisiton of the stream
+            {
+                if ((offset + currentPosition) < 0)
+                {
+                    throw new ArgumentException("offset is targeting before begining of stream");
+                }
+                else if ((offset + currentPosition) >= streamLength)
+                {
+                    throw new ArgumentException("offset is beyond streamLength");
+                }
+                else
+                {
+                    currentPosition += offset;
+                }
+            }
+            return currentPosition;
+
         }
 
         public override void SetLength(long value)
@@ -103,7 +163,6 @@ namespace CS422
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new NotImplementedException();
         }
     }
 }
